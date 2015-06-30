@@ -40,22 +40,24 @@ from (
         end as Total_n4
     from (  
         select 
-            strftime('%Y', TRANSDATE) as periode_year,
-            strftime('%m', TRANSDATE) as periode_month,
+            strftime('%Y', c.TRANSDATE) as periode_year,
+            strftime('%m', c.TRANSDATE) as periode_month,
             case
-                when transcode = 'Deposit' then transamount
+                when c.transcode = 'Deposit' then c.transamount * cf.BaseConvRate 
                 else 0
             end as Deposit,
             case
-              when transcode = 'Withdrawal' then -transamount
+              when c.transcode = 'Withdrawal' then -c.transamount * cf.BaseConvRate
               else 0
             end as Withdrawal
             --,*
         from
-            checkingaccount_V1
+            checkingaccount_V1 c
+		left join ACCOUNTLIST_V1 AC on AC.ACCOUNTID = c.ACCOUNTID
+		left join currencyformats_v1 cf on cf.currencyid=AC.currencyid
         where
-            TRANSDATE > date('now', 'start of year','-4 year','localtime')
-             and status <>'V'
+            c.TRANSDATE > date('now', 'start of year','-4 year','localtime')
+             and c.status <>'V'
     )
     group by periode_year,periode_month
     order by periode_year,periode_month asc
